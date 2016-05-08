@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicTest", "DynamicTest\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{919821E3-4473-4AEB-9319-EEB03276A6E3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicLibrary", "DynamicLibrary\DynamicLibrary.csproj", "{13157E8A-5549-4CE3-B487-FEE5E989C922}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,14 @@ Global
 		{919821E3-4473-4AEB-9319-EEB03276A6E3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{919821E3-4473-4AEB-9319-EEB03276A6E3}.Release|x64.ActiveCfg = Release|Any CPU
 		{919821E3-4473-4AEB-9319-EEB03276A6E3}.Release|x64.Build.0 = Release|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Debug|x64.Build.0 = Debug|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Release|x64.ActiveCfg = Release|Any CPU
+		{13157E8A-5549-4CE3-B487-FEE5E989C922}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
