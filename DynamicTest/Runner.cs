@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -28,11 +29,19 @@ namespace DynamicTest
 
         public void AddProvider(string hostname, int port)
         {
-            var client = new TcpClient(hostname, port);
-            if (client.Connected)
+            try
             {
-                AddProvider(client.GetStream());
-                m_providerClients.Add(client);
+                var client = new TcpClient(hostname, port);
+                if (client.Connected)
+                {
+                    AddProvider(client.GetStream());
+                    m_providerClients.Add(client);
+                }
+            }
+            catch(Exception e)
+            {
+                if (Debugger.IsAttached)
+                    AddProvider(hostname, port);
             }
         }
 

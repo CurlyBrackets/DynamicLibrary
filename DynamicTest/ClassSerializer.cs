@@ -41,7 +41,27 @@ namespace DynamicTest
             bw.Write((uint)t.Attributes);
 
             // TODO custom attr for t
+            var cas = t.GetCustomAttributesData();
+            bw.Write(cas.Count);
+            foreach(var ca in cas)
+            {
+                bw.Write(ca.AttributeType.FullName);
+                var ctorArgs = ca.ConstructorArguments;
+                bw.Write(ctorArgs.Count);
+                foreach(var arg in ctorArgs)
+                {
+                    
+                }
 
+                var namedArgs = ca.NamedArguments;
+                bw.Write(namedArgs.Count);
+                foreach(var arg in namedArgs)
+                {
+                    arg.
+                }
+
+                Console.WriteLine(ca.AttributeType.FullName);  
+            }
 
             bw.Write(t.BaseType.FullName);
             var interfaces = t.GetInterfaces();

@@ -42,7 +42,7 @@ namespace DynamicTest
             }
         }
 
-        public async void Listen(int port)
+        public void Listen(int port)
         {
             var ln = new TcpListener(IPAddress.Any, port);
             ln.Start(10);
@@ -58,11 +58,11 @@ namespace DynamicTest
 
         private void ServeClient(TcpClient client)
         {
-            if (!m_source.IsCancellationRequested)
+            if (m_source.IsCancellationRequested)
                 return;
 
             var stream = client.GetStream();
-            Listen(stream).Wait();
+            Listen(stream).Wait(m_source.Token);
         }
     }
 }

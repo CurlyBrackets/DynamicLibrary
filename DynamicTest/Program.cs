@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DynamicTest
@@ -21,6 +23,9 @@ namespace DynamicTest
             var provider = new Provider();
             Extensions.Go(() => provider.Listen(5335));
             //Extensions.Go(() => provider.Listen(stream));
+
+            if(Debugger.IsAttached)
+                Thread.Sleep(50);
 
             var runner = new Runner();
             runner.AddProvider("localhost", 5335);

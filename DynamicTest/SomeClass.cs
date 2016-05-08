@@ -33,6 +33,7 @@ namespace DynamicTest
         public abstract int Work();
     }
 
+    [Serializable]
     class SomeClass : BaseClass
     {
         private int m_value, m_iter;

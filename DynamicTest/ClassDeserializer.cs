@@ -141,6 +141,7 @@ namespace DynamicTest
         {
             m_currentTb = tb;
             // TODO custom attr for tb
+            
 
             foreach (var t in ReadTypeArray())
                 tb.AddInterfaceImplementation(t);
@@ -259,6 +260,15 @@ namespace DynamicTest
                     );
             }
             return ret;
+        }
+
+        private void ReadCustomAttributes(dynamic target)
+        {
+            int num = m_br.ReadInt32();
+            for(int i = 0; i < num; i++)
+            {
+                //var attrBuilder = new CustomAttributeBuilder()
+            }
         }
 
         private void ReadParameter(dynamic item)
