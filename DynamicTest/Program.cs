@@ -17,20 +17,16 @@ namespace DynamicTest
             a.Init(6, 7);
             Console.WriteLine(a.BaseWork());
 
-            var stream = new MemoryStream();
-            var input = new ClassSerializer(stream);
-            var output = new ClassDeserializer(null);
-            output.SetStream(stream);
+            //var stream = new MemoryStream();
+            var provider = new Provider();
+            Extensions.Go(() => provider.Listen(5335));
+            //Extensions.Go(() => provider.Listen(stream));
 
-            input.Serialize(typeof(BaseClass));
-            input.Serialize(typeof(SomeClass));
+            var runner = new Runner();
+            runner.AddProvider("localhost", 5335);
+            //runner.AddProvider(stream);
 
-            stream.Position = 0;
-
-            var tb = output.Deserialize();
-            var t = output.Deserialize();
-            var obj = output.Instance(t, 5);
-
+            var obj = runner.Instance("DynamicTest.SomeClass", 5);
             obj.Invoke("Init", 10, 7);
             Console.WriteLine(obj.Invoke("BaseWork"));
         }

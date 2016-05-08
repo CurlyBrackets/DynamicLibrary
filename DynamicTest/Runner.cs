@@ -52,8 +52,9 @@ namespace DynamicTest
             foreach(var s in m_providerStreams)
             {
                 m.SerializeTo(s);
-                var resp = s.DeserializeFrom<ResponseMessage>();
-                if (resp.TypeFollowing)
+                var resp = s.DeserializeFromAsync<ResponseMessage>();
+                resp.Wait();
+                if (resp != null && resp.Result.TypeFollowing)
                 {
                     m_deserializer.SetStream(s);
                     return m_deserializer.Deserialize();

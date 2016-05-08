@@ -56,7 +56,7 @@ namespace DynamicTest
         public void SetStream(Stream s)
         {
             m_core = s;
-            m_br = new BinaryReader(m_core);
+            //m_br = new BinaryReader(m_core);
         }
 
         private void ResetState()
@@ -517,7 +517,15 @@ namespace DynamicTest
                     return ret;
             }
 
-            return m_parent.RequestType(name);
+            PushState();
+            try
+            {
+                return m_parent.RequestType(name);
+            }
+            finally
+            {
+                PopState();
+            }
         }
 
         private static string Name(string n)
