@@ -7,7 +7,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DynamicTest
+namespace Dynamic
 {
     struct ClassFrame
     {
@@ -22,7 +22,7 @@ namespace DynamicTest
     {
         private const string Namespace = "Dynamic.";
 
-        private Runner m_parent;
+        private ClassManager m_parent;
 
         private Stream m_core;
         private BinaryReader m_br;
@@ -37,7 +37,7 @@ namespace DynamicTest
         private Dictionary<string, ConstructorBuilder> m_ctors;
         private TypeBuilder m_currentTb;
 
-        public ClassDeserializer(Runner parent)
+        public ClassDeserializer(ClassManager parent)
         {
             m_parent = parent;
 
@@ -567,22 +567,18 @@ namespace DynamicTest
 
         public Type ResolveType(string name)
         {
-            /*
-            var ret = Type.GetType(name);
-            if (ret != null)
-                return ret;
-            */
-            var ret = m_ab.GetType(Name(name));
-            if (ret != null)
-                return ret;
-
-            if (name.StartsWith("System."))
+            Type ret = null;
+            foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {
-                ret = Type.GetType(name);
+                ret = a.GetType(name);
                 if (ret != null)
                     return ret;
             }
-
+            
+            ret = m_ab.GetType(Name(name));
+            if (ret != null)
+                return ret;
+            
             PushState();
             try
             {

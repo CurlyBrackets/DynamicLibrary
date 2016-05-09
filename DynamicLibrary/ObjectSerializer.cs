@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DynamicTest
+namespace Dynamic
 {
     public class ObjectSerializer
     {

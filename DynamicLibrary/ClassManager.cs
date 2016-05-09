@@ -7,15 +7,15 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DynamicTest
+namespace Dynamic
 {
-    class Runner
+    public class ClassManager
     {
         private List<Stream> m_providerStreams;
         private List<TcpClient> m_providerClients;
         private ClassDeserializer m_deserializer;
 
-        public Runner()
+        public ClassManager()
         {
             m_providerStreams = new List<Stream>();
             m_providerClients = new List<TcpClient>();

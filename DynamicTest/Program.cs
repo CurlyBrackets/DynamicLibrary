@@ -9,13 +9,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DynamicTest
+namespace Dynamic
 {
     class Program
     {
         static void Main(string[] args)
         {
-            var a = new SomeClass(5);
+            /*var a = new SomeClass(5);
             a.Init(6, 7);
             Console.WriteLine(a.BaseWork());
 
@@ -24,16 +24,16 @@ namespace DynamicTest
             Extensions.Go(() => provider.Listen(5335));
             //Extensions.Go(() => provider.Listen(stream));
 
-            if(Debugger.IsAttached)
-                Thread.Sleep(50);
-
-            var runner = new Runner();
+            var runner = new ClassManager();
             runner.AddProvider("localhost", 5335);
             //runner.AddProvider(stream);
 
-            var obj = runner.Instance("DynamicTest.SomeClass", 5);
+            var obj = runner.Instance("Dynamic.SomeClass", 5);
             obj.Invoke("Init", 10, 7);
-            Console.WriteLine(obj.Invoke("BaseWork"));
+            Console.WriteLine(obj.Invoke("BaseWork"));*/
+
+            var executor = new Dynamic.RemoteExecutor();
+            executor.Discover();
         }
     }
 }

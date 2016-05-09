@@ -63,23 +63,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ClassDeserializer.cs" />
-    <Compile Include="ClassSerializer.cs" />
-    <Compile Include="EOpCode.cs" />
-    <Compile Include="ETypeTag.cs" />
-    <Compile Include="Messages.cs" />
-    <Compile Include="NameWrapper.cs" />
-    <Compile Include="ObjectDeserializer.cs" />
-    <Compile Include="ObjectSerializer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Provider.cs" />
-    <Compile Include="Runner.cs" />
     <Compile Include="SomeClass.cs" />
-    <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DynamicLibrary\DynamicLibrary.csproj">
+      <Project>{13157e8a-5549-4ce3-b487-fee5e989c922}</Project>
+      <Name>DynamicLibrary</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

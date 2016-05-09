@@ -54,9 +54,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DynamicTest\DynamicTest.csproj">
-      <Project>{0d079497-cd58-4dda-8ad6-872c7c405f67}</Project>
-      <Name>DynamicTest</Name>
+    <ProjectReference Include="..\DynamicLibrary\DynamicLibrary.csproj">
+      <Project>{13157e8a-5549-4ce3-b487-fee5e989c922}</Project>
+      <Name>DynamicLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

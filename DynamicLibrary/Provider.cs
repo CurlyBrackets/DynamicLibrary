@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DynamicTest
+namespace Dynamic
 {
-    class Provider : IDisposable
+    public class Provider : IDisposable
     {
         private CancellationTokenSource m_source;
 
