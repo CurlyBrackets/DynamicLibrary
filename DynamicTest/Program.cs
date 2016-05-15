@@ -11,29 +11,44 @@ using System.Threading.Tasks;
 
 namespace Dynamic
 {
+    class Adder
+    {
+        public int Add(int a, int b)
+        {
+            return a + b;
+        }
+    }
+
     class Program
     {
+        static ManualResetEvent s_wait;
+
         static void Main(string[] args)
         {
-            /*var a = new SomeClass(5);
-            a.Init(6, 7);
-            Console.WriteLine(a.BaseWork());
-
-            //var stream = new MemoryStream();
-            var provider = new Provider();
-            Extensions.Go(() => provider.Listen(5335));
-            //Extensions.Go(() => provider.Listen(stream));
-
-            var runner = new ClassManager();
-            runner.AddProvider("localhost", 5335);
-            //runner.AddProvider(stream);
-
-            var obj = runner.Instance("Dynamic.SomeClass", 5);
-            obj.Invoke("Init", 10, 7);
-            Console.WriteLine(obj.Invoke("BaseWork"));*/
+            Debug.Listeners.Add(new ConsoleTraceListener());
 
             var executor = new Dynamic.RemoteExecutor();
             executor.Discover();
+
+            int numCalls = 100000;
+            var obj = new Adder();
+            var param = new List<object[]>();
+            for (int i = 0; i < numCalls; i++)
+                param.Add(new object[] { i, i * i });
+
+            s_wait = new ManualResetEvent(false);
+            executor.BeginCall(obj, "Add", param, Done, executor);
+            s_wait.WaitOne();
+        }
+
+        static void Done(IAsyncResult ar)
+        {
+            var executor = (RemoteExecutor)ar.AsyncState;
+            var ret = executor.EndCall(ar);
+
+            foreach (var r in ret)
+                Console.Write("{0}\t", r);
+            s_wait.Set();
         }
     }
 }

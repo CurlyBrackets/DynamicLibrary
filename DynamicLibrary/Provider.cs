@@ -33,7 +33,14 @@ namespace Dynamic
             RequestMessage rm = null;
             while ((rm = await s.DeserializeFromAsync<RequestMessage>(m_source.Token)) != null)
             {
-                var t = Type.GetType(rm.FullName);
+                Type t = null;
+                foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    t = a.GetType(rm.FullName);
+                    if (t != null)
+                        break;
+                }
+                
                 var resp = new ResponseMessage() { TypeFollowing = t != null };
                 resp.SerializeTo(s);
 

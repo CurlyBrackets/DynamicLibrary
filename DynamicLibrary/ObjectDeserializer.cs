@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dynamic
@@ -60,6 +62,83 @@ namespace Dynamic
             TypeProviders += DefaultTypeSearch;
         }
 
+        private int m_readId = 0;
+        private Dictionary<int, byte[]> m_buffers;
+
+        public IAsyncResult BeginRead(AsyncCallback cb, object state)
+        {
+            if (m_buffers == null)
+                m_buffers = new Dictionary<int, byte[]>();
+
+            int length = m_core.BitRead();
+            var buffer = new byte[length];
+            var wrapper = new AsyncWrapper(Interlocked.Increment(ref m_readId));
+            m_buffers.Add(wrapper.Id, buffer);
+            var ret = m_core.BeginRead(buffer, 0, length, ar => {
+                wrapper.Core = ar;
+                cb(wrapper);
+            }, state);
+                        
+            return ret;
+        }
+
+        public object EndRead(IAsyncResult ar)
+        {
+            var aw = (AsyncWrapper)ar;
+            var id = aw.Id;
+            var read = m_core.EndRead(aw.Core);
+            var buf = m_buffers[id];
+            m_buffers.Remove(id);
+
+            using (var ms = new MemoryStream(buf, 0, read))
+            using (var br = new BinaryReader(ms))
+                return ReadCore(br);
+        }
+
+        private class AsyncWrapper : IAsyncResult
+        {
+            public object AsyncState
+            {
+                get
+                {
+                    return Core.AsyncState;
+                }
+            }
+
+            public WaitHandle AsyncWaitHandle
+            {
+                get
+                {
+                    return Core.AsyncWaitHandle;
+                }
+            }
+
+            public bool CompletedSynchronously
+            {
+                get
+                {
+                    return Core.CompletedSynchronously;
+                }
+            }
+
+            public bool IsCompleted
+            {
+                get
+                {
+                    return Core.IsCompleted;
+                }
+            }
+
+            public int Id { get; private set; }
+            public IAsyncResult Core { get; set; }
+
+            public AsyncWrapper(int id)
+            {
+                Id = id;
+            }
+
+        }
+
         public object Read()
         {
             int length = m_core.BitRead();
@@ -75,9 +154,7 @@ namespace Dynamic
             var tag = (ETypeTag)br.ReadByte();
             if (tag == ETypeTag.Null)
                 return null;
-            else if (tag != ETypeTag.Object)
-                return ReadPrimitive(br, tag);
-            else
+            else if (tag == ETypeTag.Object)
             {
                 var typename = br.ReadString();
                 var type = GetType(typename);
@@ -85,7 +162,7 @@ namespace Dynamic
                     return null;
 
                 int num = br.ReadInt32();
-                if(num > 0)
+                if (num > 0)
                 {
                     var types = new Type[num];
                     for (int i = 0; i < num; i++)
@@ -97,7 +174,7 @@ namespace Dynamic
                 var ret = FormatterServices.GetUninitializedObject(type);
 
                 num = br.ReadInt32();
-                for(;num > 0; num--)
+                for (; num > 0; num--)
                 {
                     // get field
                     var name = br.ReadString();
@@ -106,7 +183,7 @@ namespace Dynamic
                 }
 
                 num = br.ReadInt32();
-                for(;num > 0; num--)
+                for (; num > 0; num--)
                 {
                     // get prop
                     var p = type.GetProperty(br.ReadString());
@@ -115,9 +192,40 @@ namespace Dynamic
 
                 return ret;
             }
+            else if (tag == ETypeTag.Array)
+            {
+                var typename = br.ReadString();
+                var type = GetType(typename);
+                if (type == null)
+                    return null;
+
+                var rank = br.ReadInt32();
+                var lengths = new int[rank];
+                for (int i = 0; i < rank; i++)
+                    lengths[i] = br.ReadInt32();
+
+                var arr = Array.CreateInstance(type, lengths);
+
+                ReadArray(br, arr, 0);
+
+                return arr;
+            }
+            else
+                return ReadPrimitive(br, tag);
         }
 
-        private Type GetType(string name)
+        private void ReadArray(BinaryReader br, Array arr, int dimension, params int[] indices)
+        {
+            if (arr.Rank == dimension)
+                arr.SetValue(ReadCore(br), indices);
+            else
+            {
+                for (int i = 0; i < arr.GetLength(dimension); i++)
+                    ReadArray(br, arr, dimension + 1, indices.Append(i));
+            }
+        }
+
+        internal Type GetType(string name)
         {
             var res = new TypeProviderResult(name);
             TypeProviders(this, res);

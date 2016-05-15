@@ -18,6 +18,23 @@ namespace Dynamic
             m_core = core;
         }
 
+        public IAsyncResult BeginWrite(object o, AsyncCallback cb, object state)
+        {
+            var ms = new MemoryStream();
+            var bw = new BinaryWriter(ms);
+
+            WriteCore(bw, o);
+
+            m_core.BitWrite((int)ms.Length);
+            var buf = ms.GetBuffer();
+            return m_core.BeginWrite(buf, 0, (int)ms.Length, cb, state);
+        }
+
+        public void EndWrite(IAsyncResult ar)
+        {
+            m_core.EndWrite(ar);
+        }
+
         public void Write(object o)
         {
             var ms = new MemoryStream();
@@ -42,9 +59,7 @@ namespace Dynamic
             var tag = type.Tag();
             bw.Write((byte)tag);
 
-            if (tag != ETypeTag.Object)
-                WritePrimitive(bw, o, tag);
-            else
+            if(tag == ETypeTag.Object)
             {
                 // write object
                 bw.Write(type.FullName);
@@ -73,6 +88,28 @@ namespace Dynamic
                     bw.Write(p.Name);
                     WriteCore(bw, p.GetValue(o));
                 }
+            }
+            else if(tag == ETypeTag.Array)
+            {
+                bw.Write(type.GetElementType().FullName);
+                var arr = (Array)o;
+                bw.Write(arr.Rank);
+                for (int i = 0; i < arr.Rank; i++)
+                    bw.Write(arr.GetLength(i));
+                WriteArray(bw, arr, 0);
+            }
+            else
+                WritePrimitive(bw, o, tag);
+        }
+
+        private void WriteArray(BinaryWriter bw, Array a, int dimension, params int[] indices)
+        {
+            if (a.Rank == dimension)
+                WriteCore(bw, a.GetValue(indices));
+            else
+            {
+                for (int i = 0; i < a.GetLength(dimension); i++)
+                    WriteArray(bw, a, dimension + 1, indices.Append(i));
             }
         }
 

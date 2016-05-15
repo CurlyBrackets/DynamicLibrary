@@ -25,6 +25,7 @@ namespace Dynamic
         public int NumArguments { get; set; }
         public int NumCalls { get; set; }
         public string MethodName { get; set; }
+        public string[] TypeNames { get; set; }
     }
 
     [Serializable]

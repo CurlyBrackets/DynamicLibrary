@@ -44,6 +44,7 @@
     <Compile Include="ClassSerializer.cs" />
     <Compile Include="EOpCode.cs" />
     <Compile Include="ETypeTag.cs" />
+    <Compile Include="LimitedConcurrencyTaskScheduler.cs" />
     <Compile Include="Messages.cs" />
     <Compile Include="NameWrapper.cs" />
     <Compile Include="ObjectDeserializer.cs" />

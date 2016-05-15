@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -11,76 +13,113 @@ namespace Dynamic
 {
     class RemoteRunnerConnection
     {
+        struct State
+        {
+            public RunMessage Msg;
+            public RunnerContext Ctx;
+        }
+
         const int BufferSize = 1500;
 
         private RemoteRunner m_parent;
         private TcpClient m_client;
         private NetworkStream m_stream;
-        private MemoryStream m_bufferStream;
-
-        private byte[] m_buffer;
-        private int m_todo;
+        private ObjectDeserializer m_output;
+        private ClassManager m_manager;
 
         public RemoteRunnerConnection(RemoteRunner parent, TcpClient client)
         {
             m_parent = parent;
             m_client = client;
             m_stream = m_client.GetStream();
-
-            m_buffer = new byte[BufferSize];
-            m_bufferStream = new MemoryStream();
+            m_output = new ObjectDeserializer(m_stream);
+            m_manager = new ClassManager();
+            m_manager.AddProvider(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString(), RemoteRunner.CodePort);
+            m_output.TypeProviders += (o, e) =>
+            {
+                if (!e.TypeFound)
+                {
+                    var t = m_manager.RequestType(e.TypeName);
+                    if (t != null)
+                        e.SetResult(t);
+                }
+            };
         }
 
         public void Start()
         {
-            ReadLength();
-        }
-
-        private void LengthCallback(IAsyncResult ar)
-        {
-            int read = m_stream.EndRead(ar);
-            if (read < sizeof(int))
-                return; //shit
-
-            int length = BitConverter.ToInt32(m_buffer, 0);
-            if (read > sizeof(int))
+            try
             {
-                m_bufferStream.Write(m_buffer, sizeof(int), read - sizeof(int));
-                length -= (read - sizeof(int));
+                Debug.Print("+ RemoteRunnerConnection.Start");
+
+                m_output.BeginRead(ProcessMessage, null);
             }
-
-            m_todo = length;
-            ReadMessage();
-        }
-
-        private void ReadLength()
-        {
-            m_stream.BeginRead(m_buffer, 0, BufferSize, LengthCallback, null);
-        }
-
-        private void ReadMessage()
-        {
-            int amount = m_todo > BufferSize ? BufferSize : m_todo;
-            m_stream.BeginRead(m_buffer, 0, amount, ReadCallback, null);
-        }
-
-        private void ReadCallback(IAsyncResult ar)
-        {
-            int read = m_stream.EndRead(ar);
-            if(read > 0)
+            catch (IOException)
             {
-                m_bufferStream.Write(m_buffer, 0, read);
-                m_todo -= read;
-                if (m_todo == 0)
-                {
-                    ProcessMessage();
-                    ReadLength();
-                }
-                else
-                    ReadMessage();
+                m_client.Close();
             }
         }
 
+        private void ProcessMessage(IAsyncResult ar)
+        {
+            Debug.Print("+ RemoteRunnerConnection.ProcessMessage");
+
+            var msg = (RunMessage)m_output.EndRead(ar);
+            var ctx = new RunnerContext(this, msg.NumCalls);
+
+            m_output.BeginRead(ProcessObject, new State() { Msg = msg, Ctx = ctx });
+        }
+
+        private void ProcessObject(IAsyncResult ar)
+        {
+            Debug.Print("+ RemoteRunnerConnection.ProcessObject");
+
+            var state = (State)ar.AsyncState;
+            var obj = m_output.EndRead(ar);
+
+            var types = state.Msg.TypeNames.Select(tn => m_output.GetType(tn)).ToArray();
+
+            if (!state.Msg.IsStatic)
+            {
+                state.Ctx.Object = obj;
+                var type = obj.GetType();
+                state.Ctx.MethodInfo = obj.GetType().GetMethod(
+                    state.Msg.MethodName,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy,
+                    null,
+                    types,
+                    null);
+            }
+            else
+            {
+                state.Ctx.MethodInfo = m_output.GetType((string)obj).GetMethod(
+                    state.Msg.MethodName,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy,
+                    null,
+                    types,
+                    null);
+            }
+
+            m_output.BeginRead(ProcessArgs, state.Ctx);
+        }
+
+        private void ProcessArgs(IAsyncResult ar)
+        {
+            var ctx = (RunnerContext)ar.AsyncState;
+            Debug.Print("+ RemoteRunnerConnection.ProcessArgs - " + ctx.ArgumentsLeft);
+
+            var args = (object[])m_output.EndRead(ar);
+
+            ctx.ReceiveArguments();
+            m_parent.Enqueue(ctx, args);
+
+            if (ctx.ArgumentsLeft <= 0)
+                Start();
+            else
+                m_output.BeginRead(ProcessArgs, ctx);
+        }
+
+        /*
         private void ProcessMessage()
         {
             var od = new ObjectDeserializer(m_bufferStream);
@@ -96,44 +135,30 @@ namespace Dynamic
             
             for(int i = 0; i < msg.NumCalls; i++)
             {
-                var args = new object[msg.NumArguments];
-                for (int j = 0; j < msg.NumArguments; j++)
-                    args[j] = od.Read();
-
+                var args = (object[])od.Read();
                 ctx.Arguments.Add(args);
             }
 
-            if (msg.IsStatic)
-                ctx.MethodInfo = Type.GetType(staticName).GetMethod(
-                    msg.MethodName, 
-                    BindingFlags.Static | BindingFlags.FlattenHierarchy, 
-                    null, 
-                    ctx.Arguments[0].Select(o => o.GetType()).ToArray(), 
-                    null);
+            //if (msg.IsStatic)
+                
             else
-                ctx.MethodInfo = ctx.Object.GetType().GetMethod(
-                    msg.MethodName,
-                    BindingFlags.Instance | BindingFlags.FlattenHierarchy,
-                    null,
-                    ctx.Arguments[0].Select(o => o.GetType()).ToArray(),
-                    null);
+                
 
             // parent run context
             Extensions.Go(() => { m_parent.Execute(ctx); });
-        }
+        }*/
 
         internal void Respond(RunnerContext ctx)
         {
-            using(var ms = new MemoryStream())
-            {
-                var resp = new RunResultMessage { Success = true, NumResults = ctx.Results.Count };
-                var os = new ObjectSerializer(ms);
-                os.Write(resp);
-                foreach (var res in ctx.Results)
-                    os.Write(res);
+            Debug.Print("+ RemoteRunnerConnection.Respond");
 
-                ms.CopyToN(m_stream, (int)ms.Length);
-            }
+            var resp = new RunResultMessage { Success = true, NumResults = ctx.Results.Count };
+            var os = new ObjectSerializer(m_stream);
+            os.Write(resp);
+            foreach (var res in ctx.Results)
+                os.Write(res);
+
+            Debug.Print("- RemoteRunnerConnection.Respond");
         }
     }
 }

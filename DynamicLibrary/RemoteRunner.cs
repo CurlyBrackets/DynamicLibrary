@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -12,6 +13,7 @@ namespace Dynamic
     {
         internal const int DiscoverPort = 30375;
         internal const int ConnectionPort = 30376;
+        internal const int CodePort = 30377;
 
         internal static readonly byte[] DiscoverPackage = new byte[]
         {
@@ -21,9 +23,13 @@ namespace Dynamic
         private UdpClient m_discoverClient;
         private TcpListener m_listener;
 
+        private TaskScheduler m_scheduler;
+        private TaskFactory m_factory;
+
         public RemoteRunner(int taskCount)
         {
-
+            m_scheduler = new LimitedConcurrencyLevelTaskScheduler(taskCount);
+            m_factory = new TaskFactory(m_scheduler);
         }
 
         public void Listen()
@@ -32,6 +38,7 @@ namespace Dynamic
             m_discoverClient.BeginReceive(DiscoverCallback, null);
 
             m_listener = new TcpListener(IPAddress.Any, ConnectionPort);
+            m_listener.Start(10);
             m_listener.BeginAcceptTcpClient(AcceptCallback, null);
         }
 
@@ -57,19 +64,25 @@ namespace Dynamic
 
         private void AcceptCallback(IAsyncResult ar)
         {
+            Debug.Write("+ RemoteRunner.AcceptCallback");
+
             var client = m_listener.EndAcceptTcpClient(ar);
             var connection = new RemoteRunnerConnection(this, client);
             connection.Start();
+
+            m_listener.BeginAcceptTcpClient(AcceptCallback, null);
+            Debug.Write("- RemoteRunner.AcceptCallback");
         }
 
-        internal void Execute(RunnerContext ctx)
+        internal void Enqueue(RunnerContext ctx, object[] args)
         {
-            // generate actions to invoke
-            var actions = new Action[ctx.Arguments.Count];
-            for (int i = 0; i < actions.Length; i++)
-                actions[i] = () => { ctx.Results.Add(ctx.MethodInfo.Invoke(ctx.Object, ctx.Arguments[i])); };
-            Parallel.Invoke(actions);
-            ctx.Connection.Respond(ctx);
+            int index = ctx.CallIndex;
+            m_factory.StartNew(() =>
+            {
+                ctx.PutResult(ctx.MethodInfo.Invoke(ctx.Object, args), index);
+                if (ctx.CallsLeft <= 0)
+                    ctx.Connection.Respond(ctx);
+            });
         }
     }
 }

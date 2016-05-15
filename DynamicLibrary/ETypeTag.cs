@@ -25,6 +25,7 @@ namespace Dynamic
         Ulong,
         Ushort,
         Object,
+        Array,
         Null,
     }
 
@@ -56,7 +57,10 @@ namespace Dynamic
         {
             if (TagSwitch.ContainsKey(t))
                 return TagSwitch[t];
-            return ETypeTag.Object;
+            else if (t.IsArray)
+                return ETypeTag.Array;
+            else
+                return ETypeTag.Object;
         }
 
         public static Type Type(this ETypeTag tag)

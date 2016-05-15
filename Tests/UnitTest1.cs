@@ -52,6 +52,36 @@ namespace Tests
         }
 
         [TestMethod]
+        public void TestEmptyArray()
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            var arr = new int[] {  };
+            input.Write(arr);
+            stream.Seek(0, SeekOrigin.Begin);
+            var arr2 = output.Read();
+            Assert.IsInstanceOfType(arr2, typeof(int[]));
+            var arr3 = (int[])arr2;
+
+            Assert.AreEqual(arr.Length, arr3.Length);
+            CollectionAssert.AreEqual(arr, arr3);
+        }
+
+        [TestMethod]
+        public void TestArray()
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            var arr = new int[] { Constants.Prime, Constants.Prime << 1 };
+            input.Write(arr);
+            stream.Seek(0, SeekOrigin.Begin);
+            var arr2 = output.Read();
+            Assert.IsInstanceOfType(arr2, typeof(int[]));
+            var arr3 = (int[])arr2;
+
+            Assert.AreEqual(arr.Length, arr3.Length);
+            CollectionAssert.AreEqual(arr, arr3);
+        }
+
+        [TestMethod]
         public void TestSimple()
         {
             TestCommon(() =>

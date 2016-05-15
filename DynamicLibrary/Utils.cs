@@ -111,5 +111,13 @@ namespace Dynamic
         {
             ((Action)a)();
         }
+
+        public static T[] Append<T>(this T[] arr, T obj)
+        {
+            var ret = new T[arr.Length + 1];
+            arr.CopyTo(ret, 0);
+            ret[arr.Length] = obj;
+            return ret;
+        }
     }
 }
